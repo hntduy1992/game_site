@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Công Viên Chữ Cái Kỳ Diệu 3D - Trò Chơi Học Chữ Cái & Đánh Vần Lớp 1</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- Thư viện đồ họa 3D Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- Khung cảnh 3D Góc Nhìn Thứ Nhất -->
+    <div id="game-canvas-container"></div>
+
+    <!-- ==================== 1. MÀN HÌNH ĐẶT TÊN NHÂN VẬT & CHỌN LỚP ==================== -->
+    <div id="start-screen">
+        <div class="start-card">
+            <span class="game-badge">🎮 GAME 3D GÓC NHÌN THỨ NHẤT CHO BÉ 6 TUỔI</span>
+            <h1>CÔNG VIÊN <span>CHỮ CÁI</span> KỲ DIỆU</h1>
+            <p class="subtitle">Khám phá công viên, học phát âm, đánh vần và kết bạn cùng các loài động vật!</p>
+
+            <!-- Đặt tên nhân vật -->
+            <div class="form-group">
+                <label for="player-name-input">👦👧 Đặt tên cho nhân vật của bé:</label>
+                <div class="name-input-wrapper">
+                    <input
+                        type="text"
+                        id="player-name-input"
+                        placeholder="Nhập tên của bé (ví dụ: Bé Bi, Minh Anh...)"
+                        value="Bé Chăm Học"
+                        maxlength="24"
+                    />
+                </div>
+            </div>
+
+            <!-- Chọn Lớp (Mặc định Lớp 1) -->
+            <div class="form-group">
+                <label>🎒 Chọn lớp học của bé (Mặc định Lớp 1):</label>
+                <div class="grade-selector">
+                    <div class="grade-option" data-grade="mam-non">
+                        <span class="grade-icon">🐣</span>
+                        <span class="grade-title">Mầm Non</span>
+                        <span class="grade-desc">5 tuổi • Làm quen chữ</span>
+                    </div>
+                    <div class="grade-option active" data-grade="lop-1">
+                        <span class="default-tag">Mặc định</span>
+                        <span class="grade-icon">🏫</span>
+                        <span class="grade-title">Lớp 1</span>
+                        <span class="grade-desc">6 tuổi • Phát âm & Đánh vần</span>
+                    </div>
+                    <div class="grade-option" data-grade="lop-2">
+                        <span class="grade-icon">🚀</span>
+                        <span class="grade-title">Lớp 2</span>
+                        <span class="grade-desc">7 tuổi • Mở rộng từ vựng</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tóm tắt kỹ năng điều khiển góc nhìn thứ nhất -->
+            <div class="controls-preview">
+                <div class="control-item">
+                    <kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd><br />
+                    Di chuyển & Nhìn quanh
+                </div>
+                <div class="control-item">
+                    <kbd>Click Trái 🖱️</kbd><br />
+                    Chọn & Học cùng con vật
+                </div>
+                <div class="control-item">
+                    <kbd>Chuột Phải 🖱️</kbd><br />
+                    Mở Menu Thao Tác
+                </div>
+            </div>
+
+            <button id="btn-start-game" class="btn-start-game">
+                <span>🌳 BƯỚC VÀO CÔNG VIÊN NGAY!</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== 2. GIAO DIỆN HUD GÓC NHÌN THỨ NHẤT ==================== -->
+    <div id="hud-layer" class="hidden">
+        <!-- Góc trên trái: Thông tin bé & Tiến độ kết bạn -->
+        <div class="hud-top-left hud-interactive">
+            <div class="player-badge-card">
+                <div class="avatar-circle">🧒</div>
+                <div class="player-meta">
+                    <span id="hud-player-name" class="player-name-text">Bé Chăm Học</span>
+                    <span id="hud-player-grade" class="player-grade-text">Lớp 1 (6 tuổi)</span>
+                </div>
+            </div>
+
+            <div class="progress-pill">
+                <div class="progress-header">
+                    <span>🐾 Đoàn thú đi theo bé:</span>
+                    <span id="progress-count-text">0 / 8 Bạn thú</span>
+                </div>
+                <div class="progress-bar-track">
+                    <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                </div>
+                <div id="follower-icons-row" class="follower-icons-row"></div>
+            </div>
+        </div>
+
+        <!-- Giữa trên: Lời hướng dẫn giọng đọc -->
+        <div class="hud-top-center">
+            <div class="voice-guide-banner">
+                <span class="guide-speaker-icon">🔊</span>
+                <span id="guide-message-text" class="guide-message-text">
+                    Chào mừng bé đến với Công Viên Chữ Cái! Hãy đi theo các ngôi sao tới gặp bạn Bò Sữa nhé!
+                </span>
+            </div>
+        </div>
+
+        <!-- Góc trên phải: Bản đồ Minimap & Nút hỗ trợ -->
+        <div class="hud-top-right hud-interactive">
+            <div class="minimap-wrapper">
+                <canvas id="minimap-canvas" width="160" height="160"></canvas>
+                <span class="minimap-label">BẢN ĐỒ CÔNG VIÊN</span>
+            </div>
+            <div class="hud-quick-buttons">
+                <button id="btn-find-next" class="hud-btn" title="Nhờ thú dẫn đường tới con vật tiếp theo">
+                    🧭 Chỉ đường
+                </button>
+                <button id="btn-toggle-audio" class="hud-btn" title="Bật/Tắt âm thanh">
+                    🔊 Âm thanh: Bật
+                </button>
+            </div>
+        </div>
+
+        <!-- Tâm ngắm giữa màn hình (Crosshair góc nhìn thứ nhất) -->
+        <div id="crosshair-container">
+            <div id="crosshair-reticle" class="crosshair-reticle">
+                <div class="crosshair-dot"></div>
+            </div>
+            <div id="target-prompt-bubble" class="target-prompt-bubble">
+                <span id="target-prompt-title">🐮 Bạn Bò Sữa - Chữ B</span>
+                <span class="target-prompt-sub">🖱️ Click Trái: Học bài • 🖱️ Chuột Phải: Menu thao tác</span>
+            </div>
+        </div>
+
+        <!-- Cụm phím di chuyển trực quan trên màn hình cho bé -->
+        <div class="onscreen-keypad hud-interactive">
+            <div></div>
+            <button class="key-btn" data-key="forward" title="Đi tới (W)">▲</button>
+            <div></div>
+            <button class="key-btn" data-key="turnLeft" title="Quay trái (←)">↺</button>
+            <button class="key-btn" data-key="backward" title="Đi lùi (S)">▼</button>
+            <button class="key-btn" data-key="turnRight" title="Quay phải (→)">↻</button>
+        </div>
+
+        <!-- Thanh nhắc phím điều khiển bên dưới -->
+        <div class="hud-bottom-bar">
+            <span><kbd>W A S D</kbd> Đi bộ</span>
+            <span><kbd>Space</kbd> Nhảy</span>
+            <span><kbd>Click Trái</kbd> Chọn / Học bài</span>
+            <span><kbd>Chuột Phải</kbd> Menu thao tác</span>
+            <span><kbd>ESC</kbd> Hiện con trỏ chuột</span>
+        </div>
+    </div>
+
+    <!-- ==================== 3. MENU CHUỘT PHẢI (CONTEXT MENU) ==================== -->
+    <div id="context-menu" class="hidden">
+        <div class="context-header">
+            <span id="ctx-emoji" class="context-emoji">🐮</span>
+            <div class="context-title-wrap">
+                <span id="ctx-title" class="context-title">Bạn Bò Sữa</span>
+                <span id="ctx-subtitle" class="context-subtitle">Đồng Cỏ Xanh Phía Bắc</span>
+            </div>
+        </div>
+        <ul id="ctx-list" class="context-list"></ul>
+    </div>
+
+    <!-- ==================== 4. MODAL BÀI HỌC & BÀI KIỂM TRA ==================== -->
+    <div id="lesson-modal" class="hidden">
+        <div class="lesson-card">
+            <div class="lesson-header">
+                <div class="lesson-animal-info">
+                    <div id="lesson-animal-emoji" class="lesson-animal-emoji">🐮</div>
+                    <div>
+                        <h2 id="lesson-animal-title">Bạn Bò Sữa - Học Chữ B</h2>
+                        <p id="lesson-animal-zone">📍 Đồng Cỏ Xanh Phía Bắc</p>
+                    </div>
+                </div>
+                <button id="btn-close-lesson" class="btn-close-modal" title="Đóng">✕</button>
+            </div>
+
+            <div class="lesson-tabs">
+                <button id="tab-btn-lesson" class="lesson-tab active">📚 1. Bài Học Phát Âm & Đánh Vần</button>
+                <button id="tab-btn-quiz" class="lesson-tab">⭐ 2. Bài Kiểm Tra Kết Bạn</button>
+            </div>
+
+            <div class="lesson-body">
+                <!-- TAB 1: NỘI DUNG BÀI HỌC -->
+                <div id="lesson-tab-content">
+                    <div class="letter-showcase-grid">
+                        <div id="big-letter-card" class="big-letter-box" title="Nhấn để nghe phát âm chữ cái">
+                            <span id="lesson-letter-pair" class="letter-pair">B b</span>
+                            <span id="lesson-phonetic" class="phonetic-chip">Phát âm: Bờ</span>
+                        </div>
+
+                        <div class="spelling-stage">
+                            <div id="lesson-word-label" class="word-title-label">ĐÁNH VẦN TỪ: BÒ SỮA</div>
+                            <div id="spelling-blocks-container" class="spelling-blocks"></div>
+                            <div id="lesson-example-sentence" class="example-sentence-box">
+                                📖 Câu ví dụ: "Con bò sữa đang gặm cỏ non trên cánh đồng."
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="audio-action-row">
+                        <button id="btn-speak-letter" class="btn-audio voice-letter">
+                            🔊 Nghe Phát Âm Chữ
+                        </button>
+                        <button id="btn-speak-spelling" class="btn-audio voice-spell">
+                            🎵 Nghe Đánh Vần Từng Âm
+                        </button>
+                        <button id="btn-speak-animal" class="btn-audio voice-animal">
+                            🐾 Nghe Tiếng Con Vật
+                        </button>
+                    </div>
+
+                    <div class="lesson-footer">
+                        <button id="btn-start-quiz" class="btn-go-quiz">
+                            <span>Làm Bài Kiểm Tra Để Kết Bạn</span>
+                            <span>➔</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB 2: NỘI DUNG BÀI KIỂM TRA -->
+                <div id="quiz-tab-content" style="display: none;">
+                    <div id="quiz-progress-dots" class="quiz-progress-dots"></div>
+
+                    <div class="quiz-question-box">
+                        <div id="quiz-question-text" class="quiz-question-text">
+                            Câu hỏi kiểm tra
+                        </div>
+                        <button id="btn-listen-quiz-question" class="btn-listen-question">
+                            🔊 Nghe lại câu hỏi
+                        </button>
+                    </div>
+
+                    <div id="quiz-options-grid" class="quiz-options-grid"></div>
+                    <div id="quiz-feedback-msg" class="quiz-feedback-msg"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 5. MODAL CHIẾN THẮNG HOÀN THÀNH TẤT CẢ ==================== -->
+    <div id="victory-modal" class="hidden">
+        <div class="victory-card">
+            <div class="victory-trophy">🏆🎉</div>
+            <h1>CHÚC MỪNG <span id="victory-player-name" style="color: #FF6B6B;">BÉ NGOAN</span>!</h1>
+            <p class="subtitle">
+                Bé đã hoàn thành xuất sắc tất cả bài học chữ cái, phát âm và đánh vần trong Công Viên!
+                Cả 8 bạn động vật giờ đây đều đi theo bé!
+            </p>
+            <div id="victory-badges-list" class="victory-badges"></div>
+            <button id="btn-continue-park" class="btn-start-game">
+                <span>🎠 TIẾP TỤC DẠO CHƠI CÙNG ĐOÀN THÚ!</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Các mô-đun kịch bản của Trò chơi -->
+    <script src="js/data.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/animals.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+
